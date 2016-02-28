@@ -69,7 +69,7 @@ The purpose of this analysis is to:
   stormData <- read.csv(bzfile("data/repdata-data-StormData.csv.bz2"))
 ```
 
-First, let's process the storm data dates and times into R POSIX time.
+First, let's process the storm data dates and times into R POSIX time. We will also parse the damages.
 
 ```{r}
   # Add the time to the date and format as POSIX time
@@ -103,19 +103,23 @@ First, let's process the storm data dates and times into R POSIX time.
     return(output)
   }
   
+  # Add to source table
   stormData <- mutate(stormData,
-                      pDMG=computeDamages(PROPDMG, PROPDMGEXP))
-```
-
-
-
-```{r}
-stormData %>%
-  group_by(MONTH) %>%
-  summarise(sum(FATALITIES), sum(INJURIES), sum(PROPDMG), sum(CROPDMG))
+                      pDMG=computeDamages(PROPDMG, PROPDMGEXP),
+                      cDMG=computeDamages(CROPDMG, CROPDMGEXP))
 ```
 
 ## Results
+
+Let's take a look at how much destruction is attributed to storms in the US by month over the period of this survey.
+
+```{r}
+summary <- stormData %>%
+  group_by(MONTH) %>%
+  summarise(fatalities=sum(FATALITIES), injuries=sum(INJURIES), property_damage=sum(pDMG), crop_damage=sum(cDMG)) %>%
+  mutate(property_damage=format(property_damage, scientific=TRUE, digits=2),
+         crop_damage=format(crop_damage, scientific=TRUE, digits=2))
+```
 
 ### Which types of events are most harmful to population health?
 
