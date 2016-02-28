@@ -1,0 +1,72 @@
+---
+title: Coursera - Reproducible Research
+subtitle: Assignment 2
+author: Ron Ammar
+output: 
+  html_document:
+    toc: true
+    toc_depth: 4
+---
+
+```{r global_options, include=FALSE}
+  # use include=FALSE to have the chunk evaluated, but neither the code nor its output displayed.
+  knitr::opts_chunk$set(echo=TRUE, message=FALSE, fig.align="center",
+                        fig.width=12, fig.height=8, fig.path='figure/',
+                        dev='png')
+```
+
+```{r}
+  # Clear the current session, to avoid errors from persisting data structures
+  rm(list=ls())
+
+  # Free up memory by forcing garbage collection
+  invisible(gc())
+
+  # Pretty printing in knitr
+  library(printr)
+
+  # Manually set the seed to an arbitrary number for consistency in reports
+  set.seed(1234)
+
+  # Do not convert character vectors to factors unless explicitly indicated
+  options(stringsAsFactors=FALSE)
+
+  startTime <- Sys.time()
+```
+
+## Background
+
+
+
+## Purpose
+
+The purpose of this analysis is to:
+
+1. Complete the Reproducible Research course project #1.
+2. Figure out how active this anonymous dude is.
+
+## Analysis
+
+**Analysis Date:** `r format(Sys.time(), "%k:%M:%S, %A, %B %d, %Y")` 
+
+```{r}
+  
+```
+
+### What is mean total number of steps taken per day?
+
+```{r}
+```
+
+
+------
+
+## System Information
+
+***Time required to process this report:*** *`r format(Sys.time() - startTime)`*
+
+***R session information:***
+
+```{r, echo_session_info}
+  sessionInfo()
+```
