@@ -54,8 +54,9 @@ The purpose of this analysis is to:
 **Analysis Date:** `r format(Sys.time(), "%k:%M:%S, %A, %B %d, %Y")` 
 
 ```{r, cache=TRUE}
-  
-  dat <- read.csv(bzfile("data/repdata-data-StormData.csv.bz2"))
+  ##### This knitr chunk is cached to increase development speed.
+
+  stormData <- read.csv(bzfile("data/repdata-data-StormData.csv.bz2"))
 ```
 
 ### subsection 1
