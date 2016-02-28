@@ -10,7 +10,7 @@ install.packages(
 )
 ```
 
-Then, to render this analysis into html (and the `.md` file that is auto-generated from the `.Rmd`) do the following:
+Then, to render this analysis into html, do the following:
 
 ```r
 setwd("<DIRECTORY TO WHICH THIS REPO HAS BEEN CLONED>")
