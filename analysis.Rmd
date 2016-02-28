@@ -1,6 +1,6 @@
 ---
-title: Coursera - Reproducible Research
-subtitle: Assignment 2
+title: Coursera - Reproducible Research - Assignment 2
+subtitle: MORE SPECIFIC TITLE GOES HERE
 author: Ron Ammar
 output: 
   html_document:
@@ -36,28 +36,33 @@ output:
 
 ## Background
 
+Storms and other severe weather events can cause both public health and economic problems for communities and municipalities. Many severe events can result in fatalities, injuries, and property damage, and preventing such outcomes to the extent possible is a key concern.
 
+This project involves exploring the U.S. National Oceanic and Atmospheric Administration's (NOAA) storm database. This database tracks characteristics of major storms and weather events in the United States, including when and where they occur, as well as estimates of any fatalities, injuries, and property damage.
+
+The events in the database start in the year 1950 and end in November 2011. In the earlier years of the database there are generally fewer events recorded, most likely due to a lack of good records. More recent years should be considered more complete.
 
 ## Purpose
 
 The purpose of this analysis is to:
 
-1. Complete the Reproducible Research course project #1.
-2. Figure out how active this anonymous dude is.
+1. Complete the Reproducible Research course project #2.
+2. Determine _____.
 
-## Analysis
+## Data Processing
 
 **Analysis Date:** `r format(Sys.time(), "%k:%M:%S, %A, %B %d, %Y")` 
 
-```{r}
+```{r, cache=TRUE}
   
+  dat <- read.csv(bzfile("data/repdata-data-StormData.csv.bz2"))
 ```
 
-### What is mean total number of steps taken per day?
+### subsection 1
 
-```{r}
-```
+## Results
 
+### subsection 1
 
 ------
 
