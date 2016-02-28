@@ -1,6 +1,6 @@
 ---
 title: Coursera - Reproducible Research - Assignment 2
-subtitle: MORE SPECIFIC TITLE GOES HERE
+subtitle: TODO briefly summarizes your data analysis
 author: Ron Ammar
 output: 
   html_document:
@@ -32,7 +32,15 @@ output:
   options(stringsAsFactors=FALSE)
 
   startTime <- Sys.time()
+  
+  library(dplyr)
+  library(ggplot2)
+  library(stringr)
 ```
+
+## Summary
+
+***Synopsis that describes and summarizes the data analysis in less than 10 sentences?***
 
 ## Background
 
@@ -47,23 +55,61 @@ The events in the database start in the year 1950 and end in November 2011. In t
 The purpose of this analysis is to:
 
 1. Complete the Reproducible Research course project #2.
-2. Determine _____.
+2. Across the United States, determine which types of events are most harmful to population health?
+3. Across the United States, which types of events have the greatest economic consequences?
 
 ## Data Processing
 
 **Analysis Date:** `r format(Sys.time(), "%k:%M:%S, %A, %B %d, %Y")` 
 
+***Describes how the data were loaded into R and processed for analysis?***
+
 ```{r, cache=TRUE}
   ##### This knitr chunk is cached to increase development speed.
-
   stormData <- read.csv(bzfile("data/repdata-data-StormData.csv.bz2"))
 ```
 
-### subsection 1
+First, let's process the storm data dates and times into R POSIX time.
+
+```{r}
+  # Add the time to the date and format as POSIX time
+  stormData$BGN_DATE <- str_replace(stormData$BGN_DATE, "\\s.+", "")
+  dates <- strptime(stormData$BGN_DATE, format="%m/%d/%Y")
+  stormData$MONTH <- factor(months(dates), levels=month.name)
+  
+  # EXPLORATORY: figure out which symbols are used to define the cost magnitude
+  # count(stormData, CROPDMGEXP)
+  # count(stormData, PROPDMGEXP)
+  
+  # Compute the cost and multiple by correct factor/exponent
+  expLookup <- list(h=2, H=2, k=3, K=3, m=6, M=6, B=9)
+  computeMagnitude <- function(damage, damageExp) {
+    # Determine if damageExp is an allowed character or integer
+    if (is.na(as.numeric(damageExp)) & damageExp %in% names(expLookup)) {
+      damageExp <- expLookup[[damageExp]]
+    } else {  # just return the raw damage
+      damageExp <- 0
+    }
+    
+    return(damage * 10 ^ damageExp)
+  }
+```
+
+
+
+```{r}
+stormData %>%
+  group_by(MONTH) %>%
+  summarise(sum(FATALITIES), sum(INJURIES), sum(PROPDMG), sum(CROPDMG))
+```
 
 ## Results
 
-### subsection 1
+### Which types of events are most harmful to population health?
+
+### Which types of events have the greatest economic consequences?
+
+UP TO 3 FIGURES, WITH DESCRIPTIVE CAPTIONS
 
 ------
 
