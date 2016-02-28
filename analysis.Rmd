@@ -83,16 +83,28 @@ First, let's process the storm data dates and times into R POSIX time.
   
   # Compute the cost and multiple by correct factor/exponent
   expLookup <- list(h=2, H=2, k=3, K=3, m=6, M=6, B=9)
-  computeMagnitude <- function(damage, damageExp) {
-    # Determine if damageExp is an allowed character or integer
-    if (is.na(as.numeric(damageExp)) & damageExp %in% names(expLookup)) {
-      damageExp <- expLookup[[damageExp]]
-    } else {  # just return the raw damage
-      damageExp <- 0
+  
+  computeDamages <- function(damage, damageExp) {
+    # Precondition: damage and damageExp have the same length
+    output <- vector(mode="numeric", length=length(damage))
+    for (i in 1:length(damage)) {
+      # Determine if damageExp is an allowed character or integer
+      num <- as.numeric(damageExp[i])
+      exponent <- 0  # if it doesn't fit into the categories, return the raw damages
+      if (!is.na(num)) {
+        exponent <- num
+      } else if (damageExp[i] %in% names(expLookup)) {
+        exponent <- expLookup[[damageExp[i]]]
+      }
+      
+      output[i] <- damage[i] * 10 ^ exponent
     }
     
-    return(damage * 10 ^ damageExp)
+    return(output)
   }
+  
+  stormData <- mutate(stormData,
+                      pDMG=computeDamages(PROPDMG, PROPDMGEXP))
 ```
 
 
