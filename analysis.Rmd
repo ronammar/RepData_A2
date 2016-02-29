@@ -174,7 +174,7 @@ Here we show a map with the total weather-related incidents from `r min(stormDat
     choro$title <- title
     choro$set_num_colors(1)
     choro$ggplot_scale <- scale_fill_continuous(
-      name=legendTitle, low="grey", high=randomColor(luminosity="light"))
+      name=legendTitle, low="azure", high=randomColor(luminosity="light"))
     return(choro$render())
   }
   
