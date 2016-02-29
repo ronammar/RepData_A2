@@ -37,6 +37,7 @@ output:
   library(choroplethr)
   library(choroplethrMaps)
   library(ggplot2)
+  library(gridExtra)
   library(stringr)
 ```
 
@@ -80,6 +81,7 @@ First, let's process the storm data dates and times into R POSIX time. We will a
   stormData$BGN_DATE <- str_replace(stormData$BGN_DATE, "\\s.+", "")
   dates <- strptime(stormData$BGN_DATE, format="%m/%d/%Y")
   stormData$MONTH <- factor(months(dates), levels=month.name)
+  stormData$YEAR <- dates$year + 1900
   
   # EXPLORATORY: figure out which symbols are used to define the cost magnitude
   # count(stormData, CROPDMGEXP)
@@ -115,6 +117,19 @@ First, let's process the storm data dates and times into R POSIX time. We will a
 
 ## Results
 
+First, let's examine the data. How many records do we have for each year in the database?
+
+```{r}
+  numEvents <- count(stormData, YEAR)
+  ggplot(numEvents, aes(x=YEAR, y=n)) +
+    geom_point() +
+    stat_smooth() +
+    labs(x="year", y="number of weather events") +
+    theme_bw()
+```
+
+Since there are many more events on record in recent years, we will have to be aware of this trend. It may be due to changing weather patterns, increases in population, increases of measurement of weather events or a combination of these factors.
+
 To get a sense of the time of year when storms are most dangerous, let's take a look at how much destruction is attributed to storms in the US by month during the years of this survey.
 
 ```{r}
@@ -142,16 +157,28 @@ In terms of devastation wrought by storms, the most fatalities occurred in
 **`r maxF`**, the most injuries in **`r maxI`**, the most property damage in 
 **`r maxP`** and the most crop damage in **`r maxC`**.
 
-### Which types of events are most harmful to population health?
+### Where is the most damage occurring?
 
 ```{r}
-  # Let's prepare the table for us with the map package by adding state regions
+  # Let's prepare the table for use with the map package by adding state regions
   data(state.regions)
   regionLookup <- select(state.regions, region, abb)
   stormData <- left_join(stormData, regionLookup, by=c("STATE" = "abb"))
+  
+  totalPropertyDamage <- stormData %>%
+    group_by(region) %>%
+    summarise(sum(pDMG))
+  
+  totalPropertyDamage
 ```
 
+### Which types of events are most harmful to population health?
+
+FATALITIES AND INJURIES GO HERE
+
 ### Which types of events have the greatest economic consequences?
+
+DAMAGES GO HERE
 
 UP TO 3 FIGURES, WITH DESCRIPTIVE CAPTIONS
 
