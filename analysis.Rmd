@@ -38,6 +38,7 @@ output:
   library(choroplethrMaps)
   library(ggplot2)
   library(gridExtra)
+  library(randomcoloR)
   library(stringr)
 ```
 
@@ -159,17 +160,45 @@ In terms of devastation wrought by storms, the most fatalities occurred in
 
 ### Where is the most damage occurring?
 
-```{r}
+Here we show a map with the total weather-related incidents from `r min(stormData$YEAR)` to `r max(stormData$YEAR)`.
+
+```{r, warning=FALSE, fig.width=8, fig.height=20}
   # Let's prepare the table for use with the map package by adding state regions
   data(state.regions)
   regionLookup <- select(state.regions, region, abb)
   stormData <- left_join(stormData, regionLookup, by=c("STATE" = "abb"))
   
+  # Function to draw maps
+  renderMap <- function(df, title, legendTitle) {
+    choro <- StateChoropleth$new(df)
+    choro$title <- title
+    choro$set_num_colors(1)
+    choro$ggplot_scale <- scale_fill_continuous(
+      name=legendTitle, low="grey", high=randomColor(luminosity="light"))
+    return(choro$render())
+  }
+  
   totalPropertyDamage <- stormData %>%
     group_by(region) %>%
-    summarise(sum(pDMG))
+    summarise(value=sum(pDMG))
+  p1 <- renderMap(totalPropertyDamage, "property damage", "dollars")
   
-  totalPropertyDamage
+  totalCropDamage <- stormData %>%
+    group_by(region) %>%
+    summarise(value=sum(cDMG))
+  p2 <- renderMap(totalCropDamage, "crop damage", "dollars")
+  
+  totalFatalities <- stormData %>%
+    group_by(region) %>%
+    summarise(value=sum(FATALITIES))
+  p3 <- renderMap(totalFatalities, "fatalities", "fatalities")
+  
+  totalInjuries <- stormData %>%
+    group_by(region) %>%
+    summarise(value=sum(INJURIES))
+  p4 <- renderMap(totalInjuries, "injuries", "injuries")
+  
+  grid.arrange(p1, p2, p3, p4, nrow=4)
 ```
 
 ### Which types of events are most harmful to population health?
