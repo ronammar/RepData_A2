@@ -34,6 +34,8 @@ output:
   startTime <- Sys.time()
   
   library(dplyr)
+  library(choroplethr)
+  library(choroplethrMaps)
   library(ggplot2)
   library(stringr)
 ```
@@ -64,14 +66,16 @@ The purpose of this analysis is to:
 
 ***Describes how the data were loaded into R and processed for analysis?***
 
-```{r, cache=TRUE}
+```{r, load_storm_data, cache=TRUE}
   ##### This knitr chunk is cached to increase development speed.
   stormData <- read.csv(bzfile("data/repdata-data-StormData.csv.bz2"))
 ```
 
 First, let's process the storm data dates and times into R POSIX time. We will also parse the damages.
 
-```{r}
+```{r, process_storm_data, cache=TRUE}
+  ##### This knitr chunk is cached to increase development speed.
+
   # Add the time to the date and format as POSIX time
   stormData$BGN_DATE <- str_replace(stormData$BGN_DATE, "\\s.+", "")
   dates <- strptime(stormData$BGN_DATE, format="%m/%d/%Y")
@@ -89,7 +93,7 @@ First, let's process the storm data dates and times into R POSIX time. We will a
     output <- vector(mode="numeric", length=length(damage))
     for (i in 1:length(damage)) {
       # Determine if damageExp is an allowed character or integer
-      num <- as.numeric(damageExp[i])
+      num <- suppressWarnings(as.numeric(damageExp[i]))
       exponent <- 0  # if it doesn't fit into the categories, return the raw damages
       if (!is.na(num)) {
         exponent <- num
@@ -111,17 +115,41 @@ First, let's process the storm data dates and times into R POSIX time. We will a
 
 ## Results
 
-Let's take a look at how much destruction is attributed to storms in the US by month over the period of this survey.
+To get a sense of the time of year when storms are most dangerous, let's take a look at how much destruction is attributed to storms in the US by month during the years of this survey.
 
 ```{r}
 summary <- stormData %>%
   group_by(MONTH) %>%
-  summarise(fatalities=sum(FATALITIES), injuries=sum(INJURIES), property_damage=sum(pDMG), crop_damage=sum(cDMG)) %>%
+  summarise(fatalities=sum(FATALITIES), injuries=sum(INJURIES), 
+            property_damage=sum(pDMG), crop_damage=sum(cDMG)) %>%
   mutate(property_damage=format(property_damage, scientific=TRUE, digits=2),
          crop_damage=format(crop_damage, scientific=TRUE, digits=2))
+
+summary
+
+# Months with the highest total for fatalities, injuries, property or crop damages
+maxF <- summary$MONTH[
+  which(summary$fatalities == max(summary$fatalities))]
+maxI <- summary$MONTH[
+  which(summary$injuries == max(summary$injuries))]
+maxP <- summary$MONTH[
+  which(summary$property_damage == max(summary$property_damage))]
+maxC <- summary$MONTH[
+  which(summary$crop_damage == max(summary$crop_damage))]
 ```
 
+In terms of devastation wrought by storms, the most fatalities occurred in 
+**`r maxF`**, the most injuries in **`r maxI`**, the most property damage in 
+**`r maxP`** and the most crop damage in **`r maxC`**.
+
 ### Which types of events are most harmful to population health?
+
+```{r}
+  # Let's prepare the table for us with the map package by adding state regions
+  data(state.regions)
+  regionLookup <- select(state.regions, region, abb)
+  stormData <- left_join(stormData, regionLookup, by=c("STATE" = "abb"))
+```
 
 ### Which types of events have the greatest economic consequences?
 

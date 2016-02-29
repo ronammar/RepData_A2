@@ -63,19 +63,19 @@ img {
 
 <div id="header">
 <h1 class="title">Coursera - Reproducible Research - Assignment 2</h1>
-<h3 class="subtitle"><em>MORE SPECIFIC TITLE GOES HERE</em></h3>
+<h3 class="subtitle"><em>TODO briefly summarizes your data analysis</em></h3>
 <h4 class="author"><em>Ron Ammar</em></h4>
 </div>
 
 <div id="TOC">
 <ul>
+<li><a href="#summary">Summary</a></li>
 <li><a href="#background">Background</a></li>
 <li><a href="#purpose">Purpose</a></li>
-<li><a href="#data-processing">Data Processing</a><ul>
-<li><a href="#subsection-1">subsection 1</a></li>
-</ul></li>
+<li><a href="#data-processing">Data Processing</a></li>
 <li><a href="#results">Results</a><ul>
-<li><a href="#subsection-1-1">subsection 1</a></li>
+<li><a href="#which-types-of-events-are-most-harmful-to-population-health">Which types of events are most harmful to population health?</a></li>
+<li><a href="#which-types-of-events-have-the-greatest-economic-consequences">Which types of events have the greatest economic consequences?</a></li>
 </ul></li>
 <li><a href="#system-information">System Information</a></li>
 </ul>
@@ -96,7 +96,17 @@ img {
   # Do not convert character vectors to factors unless explicitly indicated
   options(stringsAsFactors=FALSE)
 
-  startTime &lt;- Sys.time()</code></pre>
+  startTime &lt;- Sys.time()
+  
+  library(dplyr)
+  library(choroplethr)
+  library(choroplethrMaps)
+  library(ggplot2)
+  library(stringr)</code></pre>
+<div id="summary" class="section level2">
+<h2>Summary</h2>
+<p><strong><em>Synopsis that describes and summarizes the data analysis in less than 10 sentences?</em></strong></p>
+</div>
 <div id="background" class="section level2">
 <h2>Background</h2>
 <p>Storms and other severe weather events can cause both public health and economic problems for communities and municipalities. Many severe events can result in fatalities, injuries, and property damage, and preventing such outcomes to the extent possible is a key concern.</p>
@@ -108,30 +118,189 @@ img {
 <p>The purpose of this analysis is to:</p>
 <ol style="list-style-type: decimal">
 <li>Complete the Reproducible Research course project #2.</li>
-<li>Determine _____.</li>
+<li>Across the United States, determine which types of events are most harmful to population health?</li>
+<li>Across the United States, which types of events have the greatest economic consequences?</li>
 </ol>
 </div>
 <div id="data-processing" class="section level2">
 <h2>Data Processing</h2>
-<p><strong>Analysis Date:</strong> 15:45:59, Sunday, February 28, 2016</p>
-<pre class="r"><code>  dat &lt;- read.csv(bzfile(&quot;data/repdata-data-StormData.csv.bz2&quot;))
+<p><strong>Analysis Date:</strong> 19:25:28, Sunday, February 28, 2016</p>
+<p><strong><em>Describes how the data were loaded into R and processed for analysis?</em></strong></p>
+<pre class="r"><code>  ##### This knitr chunk is cached to increase development speed.
+  stormData &lt;- read.csv(bzfile(&quot;data/repdata-data-StormData.csv.bz2&quot;))</code></pre>
+<p>First, let’s process the storm data dates and times into R POSIX time. We will also parse the damages.</p>
+<pre class="r"><code>  ##### This knitr chunk is cached to increase development speed.
 
-  print(nrow(dat))</code></pre>
-<pre><code>## [1] 902297</code></pre>
-<div id="subsection-1" class="section level3">
-<h3>subsection 1</h3>
-</div>
+  # Add the time to the date and format as POSIX time
+  stormData$BGN_DATE &lt;- str_replace(stormData$BGN_DATE, &quot;\\s.+&quot;, &quot;&quot;)
+  dates &lt;- strptime(stormData$BGN_DATE, format=&quot;%m/%d/%Y&quot;)
+  stormData$MONTH &lt;- factor(months(dates), levels=month.name)
+  
+  # EXPLORATORY: figure out which symbols are used to define the cost magnitude
+  # count(stormData, CROPDMGEXP)
+  # count(stormData, PROPDMGEXP)
+  
+  # Compute the cost and multiple by correct factor/exponent
+  expLookup &lt;- list(h=2, H=2, k=3, K=3, m=6, M=6, B=9)
+  
+  computeDamages &lt;- function(damage, damageExp) {
+    # Precondition: damage and damageExp have the same length
+    output &lt;- vector(mode=&quot;numeric&quot;, length=length(damage))
+    for (i in 1:length(damage)) {
+      # Determine if damageExp is an allowed character or integer
+      num &lt;- suppressWarnings(as.numeric(damageExp[i]))
+      exponent &lt;- 0  # if it doesn't fit into the categories, return the raw damages
+      if (!is.na(num)) {
+        exponent &lt;- num
+      } else if (damageExp[i] %in% names(expLookup)) {
+        exponent &lt;- expLookup[[damageExp[i]]]
+      }
+      
+      output[i] &lt;- damage[i] * 10 ^ exponent
+    }
+    
+    return(output)
+  }
+  
+  # Add to source table
+  stormData &lt;- mutate(stormData,
+                      pDMG=computeDamages(PROPDMG, PROPDMGEXP),
+                      cDMG=computeDamages(CROPDMG, CROPDMGEXP))</code></pre>
 </div>
 <div id="results" class="section level2">
 <h2>Results</h2>
-<div id="subsection-1-1" class="section level3">
-<h3>subsection 1</h3>
+<p>To get a sense of the time of year when storms are most dangerous, let’s take a look at how much destruction is attributed to storms in the US by month during the years of this survey.</p>
+<pre class="r"><code>summary &lt;- stormData %&gt;%
+  group_by(MONTH) %&gt;%
+  summarise(fatalities=sum(FATALITIES), injuries=sum(INJURIES), 
+            property_damage=sum(pDMG), crop_damage=sum(cDMG)) %&gt;%
+  mutate(property_damage=format(property_damage, scientific=TRUE, digits=2),
+         crop_damage=format(crop_damage, scientific=TRUE, digits=2))
+
+summary</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left">MONTH</th>
+<th align="right">fatalities</th>
+<th align="right">injuries</th>
+<th align="left">property_damage</th>
+<th align="left">crop_damage</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">January</td>
+<td align="right">895</td>
+<td align="right">5412</td>
+<td align="left">1.2e+11</td>
+<td align="left">2.4e+09</td>
+</tr>
+<tr class="even">
+<td align="left">February</td>
+<td align="right">872</td>
+<td align="right">9305</td>
+<td align="left">4.4e+09</td>
+<td align="left">5.7e+09</td>
+</tr>
+<tr class="odd">
+<td align="left">March</td>
+<td align="right">1232</td>
+<td align="right">11676</td>
+<td align="left">1.9e+10</td>
+<td align="left">1.2e+09</td>
+</tr>
+<tr class="even">
+<td align="left">April</td>
+<td align="right">2199</td>
+<td align="right">31426</td>
+<td align="left">2.9e+10</td>
+<td align="left">1.2e+09</td>
+</tr>
+<tr class="odd">
+<td align="left">May</td>
+<td align="right">1833</td>
+<td align="right">20267</td>
+<td align="left">3.4e+10</td>
+<td align="left">2.0e+09</td>
+</tr>
+<tr class="even">
+<td align="left">June</td>
+<td align="right">1476</td>
+<td align="right">14809</td>
+<td align="left">2.3e+10</td>
+<td align="left">6.1e+09</td>
+</tr>
+<tr class="odd">
+<td align="left">July</td>
+<td align="right">2900</td>
+<td align="right">12267</td>
+<td align="left">1.3e+10</td>
+<td align="left">5.2e+09</td>
+</tr>
+<tr class="even">
+<td align="left">August</td>
+<td align="right">1440</td>
+<td align="right">9598</td>
+<td align="left">9.8e+10</td>
+<td align="left">1.3e+10</td>
+</tr>
+<tr class="odd">
+<td align="left">September</td>
+<td align="right">762</td>
+<td align="right">4255</td>
+<td align="left">4.8e+10</td>
+<td align="left">6.2e+09</td>
+</tr>
+<tr class="even">
+<td align="left">October</td>
+<td align="right">406</td>
+<td align="right">9825</td>
+<td align="left">2.5e+10</td>
+<td align="left">2.3e+09</td>
+</tr>
+<tr class="odd">
+<td align="left">November</td>
+<td align="right">518</td>
+<td align="right">6797</td>
+<td align="left">6.1e+09</td>
+<td align="left">9.0e+08</td>
+</tr>
+<tr class="even">
+<td align="left">December</td>
+<td align="right">612</td>
+<td align="right">4891</td>
+<td align="left">6.1e+09</td>
+<td align="left">3.1e+09</td>
+</tr>
+</tbody>
+</table>
+<pre class="r"><code># Months with the highest total for fatalities, injuries, property or crop damages
+maxF &lt;- summary$MONTH[
+  which(summary$fatalities == max(summary$fatalities))]
+maxI &lt;- summary$MONTH[
+  which(summary$injuries == max(summary$injuries))]
+maxP &lt;- summary$MONTH[
+  which(summary$property_damage == max(summary$property_damage))]
+maxC &lt;- summary$MONTH[
+  which(summary$crop_damage == max(summary$crop_damage))]</code></pre>
+<p>In terms of devastation wrought by storms, the most fatalities occurred in <strong>July</strong>, the most injuries in <strong>April</strong>, the most property damage in <strong>August</strong> and the most crop damage in <strong>November</strong>.</p>
+<div id="which-types-of-events-are-most-harmful-to-population-health" class="section level3">
+<h3>Which types of events are most harmful to population health?</h3>
+<pre class="r"><code>  # Let's prepare the table for us with the map package by adding state regions
+  data(state.regions)
+  regionLookup &lt;- select(state.regions, region, abb)
+  stormData &lt;- left_join(stormData, regionLookup, by=c(&quot;STATE&quot; = &quot;abb&quot;))</code></pre>
+</div>
+<div id="which-types-of-events-have-the-greatest-economic-consequences" class="section level3">
+<h3>Which types of events have the greatest economic consequences?</h3>
+<p>UP TO 3 FIGURES, WITH DESCRIPTIVE CAPTIONS</p>
 <hr />
 </div>
 </div>
 <div id="system-information" class="section level2">
 <h2>System Information</h2>
-<p><strong><em>Time required to process this report:</em></strong> <em>0.01257205 secs</em></p>
+<p><strong><em>Time required to process this report:</em></strong> <em>11.70096 secs</em></p>
 <p><strong><em>R session information:</em></strong></p>
 <pre class="r"><code>  sessionInfo()</code></pre>
 <pre><code>## R version 3.2.3 (2015-12-10)
@@ -145,12 +314,27 @@ img {
 ## [1] stats     graphics  grDevices utils     datasets  methods   base     
 ## 
 ## other attached packages:
-## [1] printr_0.0.5
+## [1] stringr_1.0.0       ggplot2_2.0.0       choroplethrMaps_1.0
+## [4] choroplethr_3.5.0   dplyr_0.4.3         printr_0.0.5       
 ## 
 ## loaded via a namespace (and not attached):
-##  [1] magrittr_1.5    formatR_1.2.1   tools_3.2.3     htmltools_0.3  
-##  [5] yaml_2.1.13     stringi_1.0-1   rmarkdown_0.9.5 knitr_1.12     
-##  [9] stringr_1.0.0   digest_0.6.9    evaluate_0.8</code></pre>
+##  [1] Rcpp_0.12.3         highr_0.5.1         formatR_1.2.1      
+##  [4] RColorBrewer_1.1-2  plyr_1.8.3          tools_3.2.3        
+##  [7] rpart_4.1-10        digest_0.6.9        evaluate_0.8       
+## [10] gtable_0.1.2        lattice_0.20-33     png_0.1-7          
+## [13] WDI_2.4             DBI_0.3.1           mapproj_1.2-4      
+## [16] yaml_2.1.13         parallel_3.2.3      proto_0.3-10       
+## [19] gridExtra_2.2.0     knitr_1.12          cluster_2.0.3      
+## [22] maps_3.1.0          RgoogleMaps_1.2.0.7 grid_3.2.3         
+## [25] nnet_7.3-11         R6_2.1.1            jpeg_0.1-8         
+## [28] XML_3.98-1.3        survival_2.38-3     foreign_0.8-66     
+## [31] rmarkdown_0.9.5     RJSONIO_1.3-0       sp_1.2-2           
+## [34] ggmap_2.6.1         latticeExtra_0.6-28 Formula_1.2-1      
+## [37] reshape2_1.4.1      magrittr_1.5        acs_1.2            
+## [40] Hmisc_3.17-2        scales_0.3.0        htmltools_0.3      
+## [43] splines_3.2.3       assertthat_0.1      geosphere_1.5-1    
+## [46] colorspace_1.2-6    stringi_1.0-1       acepack_1.3-3.3    
+## [49] lazyeval_0.1.10     munsell_0.4.2       rjson_0.2.15</code></pre>
 </div>
 
 
