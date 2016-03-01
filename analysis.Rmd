@@ -227,6 +227,28 @@ naturalDisasters <- list(
 	"winter storm"=c("winter", "ice", "snow", "cold", "freeze", "hail", "blizzard",
 	                 "chill")
 	)
+
+  # For convenience, let's convert this to a named vector. The following code
+  # allows the vector to have duplicate names. I'm also swapping the value and
+  # names (names will be unique).
+  naturalDisasters <- setNames(
+    rep(names(naturalDisasters), lengths(naturalDisasters)),
+    unlist(naturalDisasters, use.names=FALSE))
+  
+  getCategories <- function(weatherEvents) {
+    allEvents <- tolower(weatherEvents)  # much faster than ignoring case in str_detect()
+    output <- vector(mode="character", length=length(allEvents))
+    for (i in 1:length(allEvents)) {
+      output[i] <- "other"
+      for (pattern in names(naturalDisasters)) {
+        if (str_detect(allEvents[i], pattern)) {
+          output[i] <- naturalDisasters[pattern]
+          break
+        }
+      }
+    }
+    return(output)
+  }
 ```
 
 FATALITIES AND INJURIES GO HERE
