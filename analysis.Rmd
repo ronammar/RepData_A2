@@ -141,8 +141,6 @@ summary <- stormData %>%
   mutate(property_damage=format(property_damage, scientific=TRUE, digits=2),
          crop_damage=format(crop_damage, scientific=TRUE, digits=2))
 
-summary
-
 # Months with the highest total for fatalities, injuries, property or crop damages
 maxF <- summary$MONTH[
   which(summary$fatalities == max(summary$fatalities))]
@@ -152,6 +150,8 @@ maxP <- summary$MONTH[
   which(summary$property_damage == max(summary$property_damage))]
 maxC <- summary$MONTH[
   which(summary$crop_damage == max(summary$crop_damage))]
+
+summary
 ```
 
 In terms of devastation wrought by storms, the most fatalities occurred in 
@@ -169,10 +169,10 @@ Here we show a map with the total weather-related incidents from `r min(stormDat
   stormData <- left_join(stormData, regionLookup, by=c("STATE" = "abb"))
   
   # Function to draw maps
-  renderMap <- function(df, title, legendTitle) {
+  renderMap <- function(df, title, legendTitle, numColors=1) {
     choro <- StateChoropleth$new(df)
     choro$title <- title
-    choro$set_num_colors(1)
+    choro$set_num_colors(numColors)
     choro$ggplot_scale <- scale_fill_continuous(
       name=legendTitle, low="gray95", high=randomColor(luminosity="light"))
     return(choro$render())
@@ -202,6 +202,32 @@ Here we show a map with the total weather-related incidents from `r min(stormDat
 ```
 
 ### Which types of events are most harmful to population health?
+
+Since there are no broad categories of natural disaster/weather events in the 
+database, we will use the ones provided by the Department of Homeland Security
+on their [natural disasters website](https://www.ready.gov/natural-disasters).
+
+This is a generalization. Many events such as fog or dust storms may not fall
+into these broader categories, but this is acceptable for this assignment.
+
+```{r}
+naturalDisasters <- list(
+	drought=c("drought"),
+	earthquake=c("quake"),
+	"extreme heat"=c("heat", "hot", "warm"),
+	flood=c("flood", "surf"),
+	hurricane=c("hurricane"),
+	landslide=c("landslide", "debris"),
+	"space weather"=c("space", "solar"),
+	"thunder/lightning"=c("thunder", "lightning", "wind", "rain"),
+	tornado=c("tornado", "spout", "whirl", "funnel", "burst"),
+	tsunami=c("tsunami"),
+	volcano=c("volcano", "lava", "ash"),
+	wildfire=c("fire"),
+	"winter storm"=c("winter", "ice", "snow", "cold", "freeze", "hail", "blizzard",
+	                 "chill")
+	)
+```
 
 FATALITIES AND INJURIES GO HERE
 
