@@ -266,7 +266,7 @@ effects and show the weather event that caused the most amount of devastation
 based on the outcomes including fatalities, injuries, property damage or crop
 damage.
 
-```{r, fig.width=8, fig.height=20}
+```{r, fig.width=8, fig.height=20, warning=FALSE}
   finalFigure <- stormData %>%
     group_by(region, category) %>%
     summarise(fatalities=sum(FATALITIES), injuries=sum(INJURIES), 
@@ -282,7 +282,7 @@ damage.
     select(region, category) %>%
     rename(value=category)
   
-  renderMap(figF, title="Major cause of fatalities by state", 
+  p1 <- renderMap(figF, title="Major cause of fatalities by state", 
             numColors=length(unique(figF$value)))
   
   figI <- finalFigure %>%
@@ -292,7 +292,7 @@ damage.
     select(region, category) %>%
     rename(value=category)
   
-  renderMap(figI, title="Major cause of injuries by state", 
+  p2 <- renderMap(figI, title="Major cause of injuries by state", 
             numColors=length(unique(figI$value)))
   
   figP <- finalFigure %>%
@@ -302,7 +302,7 @@ damage.
     select(region, category) %>%
     rename(value=category)
   
-  renderMap(figP, title="Major cause of property damage by state", 
+  p3 <- renderMap(figP, title="Major cause of property damage by state", 
             numColors=length(unique(figP$value)))
   
   figC <- finalFigure %>%
@@ -312,8 +312,10 @@ damage.
     select(region, category) %>%
     rename(value=category)
   
-  renderMap(figC, title="Major cause of crop damage by state", 
+  p4 <- renderMap(figC, title="Major cause of crop damage by state", 
             numColors=length(unique(figC$value)))
+  
+  grid.arrange(p1, p2, p3, p4, nrow=4)
 ```
 
 Since it's late at night, I'm going to make a few quick observations: 
