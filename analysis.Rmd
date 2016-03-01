@@ -1,6 +1,6 @@
 ---
 title: Coursera - Reproducible Research - Assignment 2
-subtitle: TODO briefly summarizes your data analysis
+subtitle: Identifying the most destructive weather events across the USA
 author: Ron Ammar
 output: 
   html_document:
@@ -41,10 +41,6 @@ output:
   library(randomcoloR)
   library(stringr)
 ```
-
-## Summary
-
-***Synopsis that describes and summarizes the data analysis in less than 10 sentences?***
 
 ## Background
 
@@ -169,12 +165,17 @@ Here we show a map with the total weather-related incidents from `r min(stormDat
   stormData <- left_join(stormData, regionLookup, by=c("STATE" = "abb"))
   
   # Function to draw maps
-  renderMap <- function(df, title, legendTitle, numColors=1) {
+  renderMap <- function(df, title, legendTitle="", numColors=1) {
     choro <- StateChoropleth$new(df)
     choro$title <- title
     choro$set_num_colors(numColors)
-    choro$ggplot_scale <- scale_fill_continuous(
-      name=legendTitle, low="gray95", high=randomColor(luminosity="light"))
+    if (numColors == 1) {
+      choro$ggplot_scale <- scale_fill_continuous(
+        name=legendTitle, low="gray95", high=randomColor(luminosity="light"))
+    } else if (numColors > 1) {
+      choro$ggplot_scale <- scale_fill_manual(
+        name=legendTitle, values=unname(distinctColorPalette(numColors)), drop=FALSE)
+    }
     return(choro$render())
   }
   
@@ -201,7 +202,11 @@ Here we show a map with the total weather-related incidents from `r min(stormDat
   grid.arrange(p1, p2, p3, p4, nrow=4)
 ```
 
-### Which types of events are most harmful to population health?
+### Which events are the most dangerous across the USA?
+
+Questions:
+*Which types of events are most harmful to population health?*
+*Which types of events have the greatest economic consequences?*
 
 Since there are no broad categories of natural disaster/weather events in the 
 database, we will use the ones provided by the Department of Homeland Security
@@ -210,7 +215,7 @@ on their [natural disasters website](https://www.ready.gov/natural-disasters).
 This is a generalization. Many events such as fog or dust storms may not fall
 into these broader categories, but this is acceptable for this assignment.
 
-```{r}
+```{r, get_disaster_categories, cache=TRUE}
 naturalDisasters <- list(
 	drought=c("drought"),
 	earthquake=c("quake"),
@@ -249,15 +254,73 @@ naturalDisasters <- list(
     }
     return(output)
   }
+  
+  # Now, let's add this broad category label to the data
+  stormData$category <- getCategories(stormData$EVTYPE)
 ```
 
-FATALITIES AND INJURIES GO HERE
+Now that we've assigned the Department of Homeland Security broad weather 
+categories, we can investigate the extent of destruction of weather events
+across the US. Below, we summarize the events according to their devastating
+effects and show the weather event that caused the most amount of devastation
+based on the outcomes including fatalities, injuries, property damage or crop
+damage.
 
-### Which types of events have the greatest economic consequences?
+```{r, fig.width=8, fig.height=20}
+  finalFigure <- stormData %>%
+    group_by(region, category) %>%
+    summarise(fatalities=sum(FATALITIES), injuries=sum(INJURIES), 
+            property_damage=sum(pDMG), crop_damage=sum(cDMG))
 
-DAMAGES GO HERE
+  # Now, we determine which event has the maximum effect for each of the 4 
+  # categories for each state. Ignore duplicates (South Dakota has the same 
+  # number of fatalities from tornadoes and winter storms)
+  figF <- finalFigure %>%
+    group_by(region) %>%
+    filter(fatalities == max(fatalities)) %>%
+    distinct() %>%
+    select(region, category) %>%
+    rename(value=category)
+  
+  renderMap(figF, title="Major cause of fatalities by state", 
+            numColors=length(unique(figF$value)))
+  
+  figI <- finalFigure %>%
+    group_by(region) %>%
+    filter(injuries == max(injuries)) %>%
+    distinct() %>%
+    select(region, category) %>%
+    rename(value=category)
+  
+  renderMap(figI, title="Major cause of injuries by state", 
+            numColors=length(unique(figI$value)))
+  
+  figP <- finalFigure %>%
+    group_by(region) %>%
+    filter(property_damage == max(property_damage)) %>%
+    distinct() %>%
+    select(region, category) %>%
+    rename(value=category)
+  
+  renderMap(figP, title="Major cause of property damage by state", 
+            numColors=length(unique(figP$value)))
+  
+  figC <- finalFigure %>%
+    group_by(region) %>%
+    filter(crop_damage == max(crop_damage)) %>%
+    distinct() %>%
+    select(region, category) %>%
+    rename(value=category)
+  
+  renderMap(figC, title="Major cause of crop damage by state", 
+            numColors=length(unique(figC$value)))
+```
 
-UP TO 3 FIGURES, WITH DESCRIPTIVE CAPTIONS
+Since it's late at night, I'm going to make a few quick observations: 
+Injuries, fatalities and property damage are highest due to tornados in "Tornado
+Alley". The largest crop/property damages in Florida are due to hurricanes. The
+most fatalities in Nevada are due to excessive heat. These all confirm general
+trends known about these states and their weather conditions.
 
 ------
 
